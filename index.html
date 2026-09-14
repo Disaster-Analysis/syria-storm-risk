@@ -50,8 +50,8 @@
 
         .leaflet-popup-content { 
             margin: 8px 12px !important; 
-            min-width: 250px !important;
-            max-width: 280px !important;
+            min-width: 260px !important;
+            max-width: 290px !important;
             line-height: 1.6 !important;
             direction: rtl !important;
             text-align: right !important;
@@ -142,10 +142,10 @@
             </div>
             <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-3.5 rounded-xl flex items-center justify-between shadow-sm">
                 <div>
-                    <span class="text-xs text-slate-500 dark:text-slate-400 block font-medium">بلاغات خطورة مرتفعة/قصوى</span>
-                    <span id="statHighRisk" class="text-2xl font-black text-rose-600 dark:text-rose-500">0</span>
+                    <span class="text-xs text-slate-500 dark:text-slate-400 block font-medium">أعلى معدل تكرار للخطر</span>
+                    <span id="statMaxRepeat" class="text-2xl font-black text-purple-600 dark:text-purple-400">0</span>
                 </div>
-                <div class="p-2.5 bg-rose-500/10 rounded-lg text-rose-600 dark:text-rose-400"><i class="fa-solid fa-triangle-exclamation text-xl"></i></div>
+                <div class="p-2.5 bg-purple-500/10 rounded-lg text-purple-600 dark:text-purple-400"><i class="fa-solid fa-arrows-rotate text-xl"></i></div>
             </div>
             <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-3.5 rounded-xl flex items-center justify-between col-span-2 sm:col-span-1 shadow-sm">
                 <div>
@@ -160,12 +160,27 @@
         <div class="grid grid-cols-1 lg:grid-cols-12 gap-4 flex-1">
             
             <!-- Left Filter Panel (3 cols) -->
-            <div class="lg:col-span-3 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-4 flex flex-col gap-4 shadow-sm">
-                <div class="flex items-center justify-between border-b border-slate-200 dark:border-slate-800 pb-2.5">
+            <div class="lg:col-span-3 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-4 flex flex-col gap-3 shadow-sm">
+                <div class="flex items-center justify-between border-b border-slate-200 dark:border-slate-800 pb-2">
                     <span class="font-bold text-sm text-slate-800 dark:text-white flex items-center gap-2">
-                        <i class="fa-solid fa-filter text-blue-600 dark:text-blue-400"></i> خيارات التصفية والبحث
+                        <i class="fa-solid fa-filter text-blue-600 dark:text-blue-400"></i> خيارات التصفية والتحكم
                     </span>
                     <button onclick="resetFilters()" class="text-[11px] text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white transition">إعادة ضبط</button>
+                </div>
+
+                <!-- Buffer Zone Toggle -->
+                <div class="p-2.5 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg flex items-center justify-between">
+                    <div class="flex items-center gap-2">
+                        <i class="fa-solid fa-circle-notch text-blue-600 dark:text-blue-400 text-sm"></i>
+                        <div>
+                            <span class="text-xs font-bold text-slate-800 dark:text-slate-200 block">نطاق التأثير (Buffer Zone)</span>
+                            <span class="text-[10px] text-slate-500 dark:text-slate-400">دوائر جغرافية تتسع حسب تكرار الخطر</span>
+                        </div>
+                    </div>
+                    <label class="relative inline-flex items-center cursor-pointer">
+                        <input type="checkbox" id="toggleBufferCheckbox" checked onchange="toggleBufferZones()" class="sr-only peer">
+                        <div class="w-9 h-5 bg-slate-300 peer-focus:outline-none rounded-full peer dark:bg-slate-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-blue-600"></div>
+                    </label>
                 </div>
 
                 <!-- Search Input -->
@@ -186,6 +201,14 @@
                     </select>
                 </div>
 
+                <!-- Filter: Storm Type (NEW) -->
+                <div>
+                    <label class="block text-xs text-slate-500 dark:text-slate-400 mb-1">نوع العاصفة:</label>
+                    <select id="stormFilter" onchange="applyFilters()" class="w-full bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-800 rounded-lg px-2.5 py-1.5 text-xs text-slate-900 dark:text-white focus:border-blue-500 focus:outline-none">
+                        <option value="ALL">جميع أنواع العواصف</option>
+                    </select>
+                </div>
+
                 <!-- Filter: Risk Level -->
                 <div>
                     <label class="block text-xs text-slate-500 dark:text-slate-400 mb-1">درجة الخطر:</label>
@@ -194,9 +217,17 @@
                     </select>
                 </div>
 
+                <!-- Filter: Repetition Count -->
+                <div>
+                    <label class="block text-xs text-slate-500 dark:text-slate-400 mb-1">تكرار الخطر لنفس الموقع:</label>
+                    <select id="repeatFilter" onchange="applyFilters()" class="w-full bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-800 rounded-lg px-2.5 py-1.5 text-xs text-slate-900 dark:text-white focus:border-blue-500 focus:outline-none">
+                        <option value="ALL">جميع مرات التكرار</option>
+                    </select>
+                </div>
+
                 <!-- Legend -->
                 <div class="mt-auto bg-slate-50 dark:bg-slate-950/80 p-3 rounded-lg border border-slate-200 dark:border-slate-800/80 text-xs space-y-2">
-                    <span class="font-bold text-slate-700 dark:text-slate-300 block mb-1">دليل النقاط (نطاق سوريا):</span>
+                    <span class="font-bold text-slate-700 dark:text-slate-300 block mb-1">دليل الرموز والنطاقات:</span>
                     <div class="flex items-center gap-2 text-slate-600 dark:text-slate-400">
                         <span class="w-3.5 h-3.5 rounded-full bg-rose-600 border border-white inline-block shrink-0 shadow"></span>
                         <span>خطر مرتفع جداً / انهيار أو انقطاع تام</span>
@@ -205,8 +236,9 @@
                         <span class="w-3.5 h-3.5 rounded-full bg-amber-500 border border-white inline-block shrink-0 shadow"></span>
                         <span>متوسط إلى مرتفع / صعوبة حركة وسير</span>
                     </div>
-                    <div class="p-2 bg-blue-50 dark:bg-blue-950/40 rounded border border-blue-200 dark:border-blue-900/50 text-[11px] text-blue-700 dark:text-blue-300">
-                        <i class="fa-solid fa-hand-pointer ml-1"></i> اضغط على أي نقطة على الخريطة لتسليط الضوء عليها في الجدول السفلي.
+                    <div class="flex items-center gap-2 text-slate-600 dark:text-slate-400">
+                        <span class="w-4 h-4 rounded-full border border-dashed border-blue-500 bg-blue-500/20 inline-block shrink-0"></span>
+                        <span>نطاق التأثير الجغرافي (Buffer = 1.2 كم × التكرار)</span>
                     </div>
                 </div>
             </div>
@@ -252,6 +284,7 @@
                             <th class="p-2.5">المنطقة</th>
                             <th class="p-2.5">القرية / البلدة</th>
                             <th class="p-2.5">P-Code</th>
+                            <th class="p-2.5">تكرار الخطر</th>
                             <th class="p-2.5">نوع العاصفة</th>
                             <th class="p-2.5">نوع الخطر</th>
                             <th class="p-2.5">المكان المستهدف</th>
@@ -264,7 +297,7 @@
                     </thead>
                     <tbody id="incidentsTableBody" class="divide-y divide-slate-200 dark:divide-slate-800">
                         <tr>
-                            <td colspan="14" class="p-10 text-center text-slate-500 dark:text-slate-400">
+                            <td colspan="15" class="p-10 text-center text-slate-500 dark:text-slate-400">
                                 <div class="max-w-md mx-auto space-y-2">
                                     <i class="fa-solid fa-file-excel text-4xl text-emerald-600 dark:text-emerald-500 block mb-3 animate-bounce"></i>
                                     <p class="font-bold text-sm text-slate-800 dark:text-white">بانتظار قراءة ملف الإكسل (سجل العواصف.xlsx)</p>
@@ -280,15 +313,16 @@
     </div>
 
     <script>
-        // ZERO hardcoded dots - 100% dynamic
         let rawData = [];
         let filteredData = [];
         let markersLayer = L.layerGroup();
+        let buffersLayer = L.layerGroup();
+        let showBuffers = true;
         let map;
         let baseLayers = {};
         let markerMap = {};
 
-        // 1. Theme Toggle Logic (Dark/Light)
+        // 1. Theme Toggle
         function initTheme() {
             const savedTheme = localStorage.getItem('theme');
             const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
@@ -317,7 +351,7 @@
             }
         }
 
-        // 2. Initialize Map covering all Syrian borders
+        // 2. Initialize Map strictly covering Syrian Territory
         function initMap() {
             const syriaSouthWest = L.latLng(32.0, 35.3);
             const syriaNorthEast = L.latLng(37.6, 42.6);
@@ -349,6 +383,7 @@
                 layers: [baseLayers.googleHybrid]
             });
 
+            buffersLayer.addTo(map);
             markersLayer.addTo(map);
         }
 
@@ -368,6 +403,15 @@
             });
         }
 
+        function toggleBufferZones() {
+            showBuffers = document.getElementById('toggleBufferCheckbox').checked;
+            if (showBuffers) {
+                map.addLayer(buffersLayer);
+            } else {
+                map.removeLayer(buffersLayer);
+            }
+        }
+
         function highlightTableRow(id, scroll = true) {
             document.querySelectorAll('#incidentsTableBody tr').forEach(r => {
                 r.classList.remove('highlight-row');
@@ -382,9 +426,10 @@
             }
         }
 
-        // 3. Render Dashboard (Map Markers & Table)
+        // 3. Render Dashboard with Buffers and Coordinates in Popup
         function renderDashboard() {
             markersLayer.clearLayers();
+            buffersLayer.clearLayers();
             markerMap = {};
             const tableBody = document.getElementById('incidentsTableBody');
             tableBody.innerHTML = '';
@@ -392,7 +437,7 @@
             if (filteredData.length === 0) {
                 tableBody.innerHTML = `
                     <tr>
-                        <td colspan="14" class="p-8 text-center text-slate-500 dark:text-slate-400">
+                        <td colspan="15" class="p-8 text-center text-slate-500 dark:text-slate-400">
                             لا توجد سجلات مطابقة للبحث أو التصفية الحالية.
                         </td>
                     </tr>`;
@@ -408,9 +453,24 @@
 
                     let markerColor = '#f59e0b'; // Amber
                     if (item.riskLevel && (item.riskLevel.includes('جداً') || (item.riskLevel.includes('مرتفع') && !item.riskLevel.includes('متوسط')))) {
-                        markerColor = '#ef4444'; // Red
+                        markerColor = '#ef4444'; // Red for High/Critical
                     }
 
+                    const count = item.repeatCount || 1;
+                    const bufferRadiusMeters = Math.max(800, count * 1200);
+
+                    // Add Buffer Zone (Circle)
+                    const bufferCircle = L.circle([item.lat, item.lon], {
+                        radius: bufferRadiusMeters,
+                        color: markerColor,
+                        fillColor: markerColor,
+                        fillOpacity: 0.12,
+                        weight: 1.5,
+                        dashArray: '5, 5'
+                    });
+                    buffersLayer.addLayer(bufferCircle);
+
+                    // Add Main Point Marker
                     const marker = L.circleMarker([item.lat, item.lon], {
                         radius: 8,
                         fillColor: markerColor,
@@ -426,7 +486,27 @@
                                 <span class="font-bold text-sm text-amber-600 dark:text-amber-400">${item.place || 'موقع'}</span>
                                 <span class="text-[10px] bg-blue-100 text-blue-700 dark:bg-blue-900/60 dark:text-blue-300 border border-blue-300 dark:border-blue-700 px-2 py-0.5 rounded-full">${item.gov || '-'}</span>
                             </div>
+
+                            <!-- Geographic Coordinates Box -->
+                            <div class="bg-slate-100 dark:bg-slate-950 p-2 rounded border border-slate-200 dark:border-slate-800 space-y-0.5">
+                                <div class="flex justify-between items-center">
+                                    <span class="text-[11px] text-slate-500 dark:text-slate-400">خط العرض (Latitude):</span>
+                                    <span class="font-mono text-sky-600 dark:text-sky-400 font-bold">${item.lat.toFixed(6)}° N</span>
+                                </div>
+                                <div class="flex justify-between items-center">
+                                    <span class="text-[11px] text-slate-500 dark:text-slate-400">خط الطول (Longitude):</span>
+                                    <span class="font-mono text-sky-600 dark:text-sky-400 font-bold">${item.lon.toFixed(6)}° E</span>
+                                </div>
+                            </div>
+
+                            <!-- Repetition and Buffer Info -->
+                            <div class="flex justify-between items-center text-[11px] bg-purple-50 dark:bg-purple-950/40 text-purple-700 dark:text-purple-300 px-2 py-1 rounded border border-purple-200 dark:border-purple-800/60">
+                                <span><strong>تكرار الخطر:</strong> ${count} ${count > 1 ? 'مرات' : 'مرة'}</span>
+                                <span><strong>نطاق التأثير:</strong> ${(bufferRadiusMeters / 1000).toFixed(1)} كم</span>
+                            </div>
+
                             ${item.pcode ? `<p><strong>P-Code:</strong> <span class="font-mono text-emerald-600 dark:text-emerald-400 font-bold">${item.pcode}</span></p>` : ''}
+                            <p><strong>نوع العاصفة:</strong> <span class="text-sky-600 dark:text-sky-400 font-semibold">${item.stormType || '-'}</span></p>
                             <p><strong>نوع الخطر:</strong> <span class="text-rose-600 dark:text-rose-400 font-bold">${item.hazardType || '-'}</span></p>
                             <p><strong>المكان:</strong> ${item.target || '-'}</p>
                             <p><strong>درجة الخطر:</strong> <span class="font-bold text-amber-600 dark:text-amber-400">${item.riskLevel || '-'}</span></p>
@@ -440,8 +520,8 @@
                     `;
 
                     marker.bindPopup(popupContent, {
-                        minWidth: 250,
-                        maxWidth: 280,
+                        minWidth: 260,
+                        maxWidth: 290,
                         autoPan: true,
                         autoPanPadding: [30, 30]
                     });
@@ -466,7 +546,8 @@
                         <td class="p-2.5">${item.district || '-'}</td>
                         <td class="p-2.5 font-bold text-amber-600 dark:text-amber-300">${item.place || '-'}</td>
                         <td class="p-2.5 font-mono text-emerald-600 dark:text-emerald-400">${item.pcode || '-'}</td>
-                        <td class="p-2.5">${item.stormType || '-'}</td>
+                        <td class="p-2.5 font-bold text-center"><span class="px-2 py-0.5 bg-purple-100 dark:bg-purple-900/40 text-purple-700 dark:text-purple-300 rounded font-mono">${count}</span></td>
+                        <td class="p-2.5 text-sky-600 dark:text-sky-400">${item.stormType || '-'}</td>
                         <td class="p-2.5 text-rose-600 dark:text-rose-400 font-semibold">${item.hazardType || '-'}</td>
                         <td class="p-2.5">${item.target || '-'}</td>
                         <td class="p-2.5"><span class="px-2 py-0.5 ${markerColor === '#ef4444' ? 'bg-rose-100 text-rose-700 dark:bg-rose-500/20 dark:text-rose-400' : 'bg-amber-100 text-amber-700 dark:bg-amber-500/20 dark:text-amber-400'} rounded text-[11px] font-semibold">${item.riskLevel || '-'}</span></td>
@@ -502,7 +583,9 @@
             document.getElementById('statTotalIncidents').innerText = filteredData.length;
             document.getElementById('statTargetRoads').innerText = filteredData.filter(i => (i.target || '').includes('طريق') || (i.target || '').includes('جسر') || (i.target || '').includes('أوتستراد')).length;
             document.getElementById('statActionsDone').innerText = filteredData.filter(i => (i.actions || '').includes('فتح') || (i.actions || '').includes('تأمين')).length;
-            document.getElementById('statHighRisk').innerText = filteredData.filter(i => (i.riskLevel || '').includes('مرتفع')).length;
+            
+            const maxRep = filteredData.length > 0 ? Math.max(...filteredData.map(i => i.repeatCount || 1)) : 0;
+            document.getElementById('statMaxRepeat').innerText = maxRep + " مرات";
             
             const uniqueGovs = [...new Set(filteredData.map(i => i.gov))].filter(Boolean);
             document.getElementById('statGovs').innerText = uniqueGovs.length;
@@ -510,25 +593,39 @@
         }
 
         function updateFilterOptions() {
+            // Governorates
             const govs = [...new Set(rawData.map(i => i.gov))].filter(Boolean);
             const govFilter = document.getElementById('govFilter');
             govFilter.innerHTML = '<option value="ALL">جميع المحافظات</option>';
-            govs.forEach(g => {
-                govFilter.innerHTML += `<option value="${g}">${g}</option>`;
-            });
+            govs.forEach(g => govFilter.innerHTML += `<option value="${g}">${g}</option>`);
 
+            // Storm Types (NEW)
+            const storms = [...new Set(rawData.map(i => i.stormType))].filter(Boolean);
+            const stormFilter = document.getElementById('stormFilter');
+            stormFilter.innerHTML = '<option value="ALL">جميع أنواع العواصف</option>';
+            storms.forEach(st => stormFilter.innerHTML += `<option value="${st}">${st}</option>`);
+
+            // Risk Levels
             const risks = [...new Set(rawData.map(i => i.riskLevel))].filter(Boolean);
             const riskFilter = document.getElementById('riskFilter');
             riskFilter.innerHTML = '<option value="ALL">جميع المستويات</option>';
-            risks.forEach(r => {
-                riskFilter.innerHTML += `<option value="${r}">${r}</option>`;
+            risks.forEach(r => riskFilter.innerHTML += `<option value="${r}">${r}</option>`);
+
+            // Repetition Counts
+            const repeats = [...new Set(rawData.map(i => i.repeatCount || 1))].filter(Boolean).sort((a, b) => a - b);
+            const repeatFilter = document.getElementById('repeatFilter');
+            repeatFilter.innerHTML = '<option value="ALL">جميع مرات التكرار</option>';
+            repeats.forEach(rep => {
+                repeatFilter.innerHTML += `<option value="${rep}">تكرار ${rep} ${rep > 1 ? 'مرات' : 'مرة'}</option>`;
             });
         }
 
         function applyFilters() {
             const query = document.getElementById('searchInput').value.trim().toLowerCase();
             const selGov = document.getElementById('govFilter').value;
+            const selStorm = document.getElementById('stormFilter').value;
             const selRisk = document.getElementById('riskFilter').value;
+            const selRepeat = document.getElementById('repeatFilter').value;
 
             filteredData = rawData.filter(item => {
                 const matchQuery = !query || 
@@ -539,9 +636,11 @@
                     (item.actions && item.actions.toLowerCase().includes(query));
                 
                 const matchGov = (selGov === "ALL") || (item.gov === selGov);
+                const matchStorm = (selStorm === "ALL") || (item.stormType === selStorm);
                 const matchRisk = (selRisk === "ALL") || (item.riskLevel === selRisk);
+                const matchRepeat = (selRepeat === "ALL") || (String(item.repeatCount || 1) === selRepeat);
 
-                return matchQuery && matchGov && matchRisk;
+                return matchQuery && matchGov && matchStorm && matchRisk && matchRepeat;
             });
 
             renderDashboard();
@@ -550,11 +649,13 @@
         function resetFilters() {
             document.getElementById('searchInput').value = "";
             document.getElementById('govFilter').value = "ALL";
+            document.getElementById('stormFilter').value = "ALL";
             document.getElementById('riskFilter').value = "ALL";
+            document.getElementById('repeatFilter').value = "ALL";
             applyFilters();
         }
 
-        // 4. Robust Number Sanitizer (Handles commas, Arabic numerals, hidden Unicode)
+        // 4. Robust Coordinate and Number Parsing
         function parseCleanCoordinate(val) {
             if (val === null || val === undefined || val === '') return NaN;
             if (typeof val === 'number') return val;
@@ -568,7 +669,7 @@
             return match ? parseFloat(match[0]) : NaN;
         }
 
-        // 5. Smart Excel Parser
+        // 5. Excel Parser with Detection of Storm Type Column
         function parseExcelBuffer(buffer, filename) {
             try {
                 const data = new Uint8Array(buffer);
@@ -579,7 +680,6 @@
                 const rows = XLSX.utils.sheet_to_json(worksheet, { header: 1, defval: "" });
                 if (!rows || rows.length === 0) return false;
 
-                // Auto detect header row (first 10 rows)
                 let headerRowIndex = -1;
                 let latColIndex = -1;
                 let lonColIndex = -1;
@@ -600,9 +700,7 @@
                         }
                     });
 
-                    if (latColIndex !== -1 && lonColIndex !== -1) {
-                        break;
-                    }
+                    if (latColIndex !== -1 && lonColIndex !== -1) break;
                 }
 
                 if (latColIndex === -1 || lonColIndex === -1) {
@@ -619,8 +717,9 @@
                 const districtCol = findCol('منطق', 'district');
                 const placeCol = findCol('قري', 'بلد', 'مكان', 'موقع', 'village', 'place');
                 const pcodeCol = findCol('pcode', 'رمز');
-                const stormCol = findCol('عاصف', 'storm');
-                const hazardCol = findCol('خطر', 'hazard');
+                const repeatCol = findCol('تكرار الخطر', 'عدد تكرار', 'تكرار', 'repeat', 'count');
+                const stormCol = findCol('نوع العاصفة', 'عاصفة', 'storm');
+                const hazardCol = findCol('نوع الخطر', 'خطر', 'hazard');
                 const targetCol = findCol('مستهدف', 'target', 'جسر', 'طريق');
                 const riskCol = findCol('درج', 'شدة', 'level', 'risk');
                 const damagesCol = findCol('ضرر', 'أضرار', 'اضرار', 'damage');
@@ -635,11 +734,17 @@
                     let lat = parseCleanCoordinate(row[latColIndex]);
                     let lon = parseCleanCoordinate(row[lonColIndex]);
 
-                    // Auto swap if inverted (Syria bounds)
+                    // Auto swap if inverted (Syria Bounds)
                     if (lat >= 39 && lat <= 43 && lon >= 32 && lon <= 38) {
                         const temp = lat;
                         lat = lon;
                         lon = temp;
+                    }
+
+                    let repeatNum = 1;
+                    if (repeatCol !== -1 && row[repeatCol]) {
+                        const parsedNum = parseCleanCoordinate(row[repeatCol]);
+                        if (!isNaN(parsedNum) && parsedNum > 0) repeatNum = Math.round(parsedNum);
                     }
 
                     if (!isNaN(lat) && !isNaN(lon) && lat !== 0 && lon !== 0) {
@@ -650,7 +755,8 @@
                             district: (districtCol !== -1 && row[districtCol]) ? String(row[districtCol]).trim() : "",
                             place: (placeCol !== -1 && row[placeCol]) ? String(row[placeCol]).trim() : "موقع محدد",
                             pcode: (pcodeCol !== -1 && row[pcodeCol]) ? String(row[pcodeCol]).trim() : "",
-                            stormType: (stormCol !== -1 && row[stormCol]) ? String(row[stormCol]).trim() : "",
+                            repeatCount: repeatNum,
+                            stormType: (stormCol !== -1 && row[stormCol]) ? String(row[stormCol]).trim() : "غير محدد",
                             hazardType: (hazardCol !== -1 && row[hazardCol]) ? String(row[hazardCol]).trim() : "",
                             target: (targetCol !== -1 && row[targetCol]) ? String(row[targetCol]).trim() : "",
                             riskLevel: (riskCol !== -1 && row[riskCol]) ? String(row[riskCol]).trim() : "متوسط إلى مرتفع",
@@ -681,7 +787,7 @@
             }
         }
 
-        // 6. Automatic File Loader: Checks local folder on open, waits cleanly if absent
+        // 6. Automatic File Loader
         async function autoLoadExcelFile() {
             const led = document.getElementById('statusLed');
             const statusText = document.getElementById('fileSourceName');
@@ -703,12 +809,9 @@
                         const success = parseExcelBuffer(buffer, "سجل العواصف.xlsx");
                         if (success) return;
                     }
-                } catch (e) {
-                    // Fail silently, waiting for manual upload or drop
-                }
+                } catch (e) {}
             }
 
-            // If not found or opened via file:/// without server
             led.className = "w-2 h-2 rounded-full bg-amber-400";
             statusText.innerText = "بانتظار ملف الإكسل (سجل العواصف.xlsx)...";
         }
@@ -721,7 +824,7 @@
             reader.readAsArrayBuffer(file);
         }
 
-        // Enable Drag & Drop anywhere on screen
+        // Enable Drag & Drop
         window.addEventListener('dragover', (e) => e.preventDefault());
         window.addEventListener('drop', (e) => {
             e.preventDefault();
