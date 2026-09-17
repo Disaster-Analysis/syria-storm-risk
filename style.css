@@ -1,0 +1,74 @@
+@import url('https://fonts.googleapis.com/css2?family=Tajawal:wght@300;400;500;700;800&display=swap');
+
+body { 
+    font-family: 'Tajawal', sans-serif; 
+}
+
+#map { 
+    height: 100%; 
+    min-height: 520px; 
+    width: 100%; 
+    border-radius: 0.75rem; 
+    z-index: 10; 
+}
+
+/* Popup Styling - Dark Theme */
+.dark .leaflet-popup-content-wrapper { 
+    background: #0f172a !important; 
+    color: #f8fafc !important; 
+    border: 1px solid #334155 !important;
+    border-radius: 0.75rem !important;
+    box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.5) !important;
+    padding: 4px !important;
+}
+.dark .leaflet-popup-tip { 
+    background: #0f172a !important; 
+}
+
+/* Popup Styling - Light Theme */
+html:not(.dark) .leaflet-popup-content-wrapper { 
+    background: #ffffff !important; 
+    color: #0f172a !important; 
+    border: 1px solid #cbd5e1 !important;
+    border-radius: 0.75rem !important;
+    box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.15) !important;
+    padding: 4px !important;
+}
+html:not(.dark) .leaflet-popup-tip { 
+    background: #ffffff !important; 
+}
+
+.leaflet-popup-content { 
+    margin: 8px 12px !important; 
+    min-width: 260px !important;
+    max-width: 290px !important;
+    line-height: 1.6 !important;
+    direction: rtl !important;
+    text-align: right !important;
+    font-family: 'Tajawal', sans-serif !important;
+}
+
+/* Selected row animated flash */
+.dark .highlight-row {
+    background-color: rgba(37, 99, 235, 0.28) !important;
+    outline: 2px solid #60a5fa !important;
+    transition: all 0.3s ease-in-out;
+}
+html:not(.dark) .highlight-row {
+    background-color: rgba(219, 234, 254, 0.9) !important;
+    outline: 2px solid #2563eb !important;
+    transition: all 0.3s ease-in-out;
+}
+
+/* Scrollbar Customization */
+::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+}
+::-webkit-scrollbar-track {
+    background: transparent;
+}
+::-webkit-scrollbar-thumb {
+    background: #64748b;
+    border-radius: 3px;
+}

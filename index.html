@@ -1,0 +1,312 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>منظومة رصد أضرار العواصف وإغلاقات الطرق | إدارة الطوارئ والكوارث</title>
+    
+    <!-- Tailwind CSS with Dark Mode Class Support -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = { darkMode: 'class' }
+    </script>
+
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Leaflet CSS & JS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <!-- SheetJS (xlsx parser) -->
+    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+
+    <link rel="stylesheet" href="style.css">
+</head>
+<body class="bg-slate-100 text-slate-900 dark:bg-slate-950 dark:text-slate-100 min-h-screen flex flex-col transition-colors duration-200" id="dropZone">
+
+    <!-- Navbar -->
+    <header class="bg-white/90 dark:bg-slate-900/90 backdrop-blur border-b border-slate-200 dark:border-slate-800 sticky top-0 z-50 transition-colors duration-200">
+        <div class="max-w-[1600px] mx-auto px-4 py-2.5 flex flex-wrap justify-between items-center gap-4">
+            <div class="flex items-center gap-3">
+                <div class="p-2.5 bg-blue-600/10 dark:bg-blue-600/20 border border-blue-500/30 dark:border-blue-500/40 rounded-xl text-blue-600 dark:text-blue-400">
+                    <i class="fa-solid fa-cloud-showers-heavy text-2xl"></i>
+                </div>
+                <div>
+                    <h1 class="text-lg md:text-xl font-bold text-slate-900 dark:text-white flex items-center gap-2">
+                        منظومة الاستجابة ورصد أضرار العواصف وإغلاقات الطرق
+                        <span class="text-xs bg-blue-100 text-blue-700 dark:bg-blue-900/60 dark:text-blue-300 border border-blue-200 dark:border-blue-700 px-2 py-0.5 rounded-full">الجمهورية العربية السورية</span>
+                    </h1>
+                    <p class="text-xs text-slate-500 dark:text-slate-400">وحدة الرصد والنمذجة المكانية | نموذج التنبؤ الأوروبي ECMWF لـ 15 يوماً</p>
+                </div>
+            </div>
+
+            <!-- Status Indicator, Theme Toggle & Actions -->
+            <div class="flex items-center gap-2.5">
+                <div id="fileSourceIndicator" class="flex items-center gap-1.5 px-3 py-1.5 bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-300 rounded-lg text-xs border border-slate-300 dark:border-slate-700">
+                    <span id="statusLed" class="w-2 h-2 rounded-full bg-amber-400 animate-pulse"></span>
+                    <span id="fileSourceName">جاري البحث عن سجل العواصف.xlsx...</span>
+                </div>
+
+                <!-- Theme Toggle Button -->
+                <button onclick="toggleTheme()" id="themeToggleBtn" title="تبديل الوضع الليلي / النهاري"
+                        class="p-2 rounded-lg bg-slate-200 hover:bg-slate-300 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 border border-slate-300 dark:border-slate-700 transition">
+                    <i id="themeIcon" class="fa-solid fa-sun text-amber-500 text-sm"></i>
+                </button>
+
+                <label class="flex items-center gap-1.5 px-3 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg text-xs font-semibold cursor-pointer shadow transition">
+                    <i class="fa-solid fa-file-excel text-sm"></i>
+                    <span>تحديد ملف Excel</span>
+                    <input type="file" id="excelFileInput" accept=".xlsx, .xls, .csv" class="hidden" onchange="handleFileUpload(event)">
+                </label>
+                <button onclick="exportGeoJSON()" class="px-3 py-1.5 bg-slate-200 hover:bg-slate-300 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 rounded-lg text-xs border border-slate-300 dark:border-slate-700 transition">
+                    <i class="fa-solid fa-download ml-1"></i> GeoJSON
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content Grid -->
+    <div class="max-w-[1600px] mx-auto px-4 py-4 flex-1 flex flex-col gap-4 w-full">
+
+        <!-- Top KPI Cards -->
+        <div class="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-5 gap-3">
+            <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-3.5 rounded-xl flex items-center justify-between shadow-sm">
+                <div>
+                    <span class="text-xs text-slate-500 dark:text-slate-400 block font-medium">إجمالي البلاغات المسجلة</span>
+                    <span id="statTotalIncidents" class="text-2xl font-black text-slate-900 dark:text-white">0</span>
+                </div>
+                <div class="p-2.5 bg-blue-500/10 rounded-lg text-blue-600 dark:text-blue-400"><i class="fa-solid fa-list-check text-xl"></i></div>
+            </div>
+            <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-3.5 rounded-xl flex items-center justify-between shadow-sm">
+                <div>
+                    <span class="text-xs text-slate-500 dark:text-slate-400 block font-medium">طرق وجسور مستهدفة</span>
+                    <span id="statTargetRoads" class="text-2xl font-black text-amber-500 dark:text-amber-400">0</span>
+                </div>
+                <div class="p-2.5 bg-amber-500/10 rounded-lg text-amber-500 dark:text-amber-400"><i class="fa-solid fa-road-barrier text-xl"></i></div>
+            </div>
+            <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-3.5 rounded-xl flex items-center justify-between shadow-sm">
+                <div>
+                    <span class="text-xs text-slate-500 dark:text-slate-400 block font-medium">عمليات الفتح والتأمين</span>
+                    <span id="statActionsDone" class="text-2xl font-black text-emerald-600 dark:text-emerald-400">0</span>
+                </div>
+                <div class="p-2.5 bg-emerald-500/10 rounded-lg text-emerald-600 dark:text-emerald-400"><i class="fa-solid fa-truck-pickup text-xl"></i></div>
+            </div>
+            <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-3.5 rounded-xl flex items-center justify-between shadow-sm">
+                <div>
+                    <span class="text-xs text-slate-500 dark:text-slate-400 block font-medium">أعلى معدل تكرار للخطر</span>
+                    <span id="statMaxRepeat" class="text-2xl font-black text-purple-600 dark:text-purple-400">0</span>
+                </div>
+                <div class="p-2.5 bg-purple-500/10 rounded-lg text-purple-600 dark:text-purple-400"><i class="fa-solid fa-arrows-rotate text-xl"></i></div>
+            </div>
+            <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-3.5 rounded-xl flex items-center justify-between col-span-2 sm:col-span-1 shadow-sm">
+                <div>
+                    <span class="text-xs text-slate-500 dark:text-slate-400 block font-medium">أعلى محافظة متوقعة بالهطول</span>
+                    <span id="statTopRainGov" class="text-base font-black text-rose-600 dark:text-rose-400 truncate block">جاري الحساب...</span>
+                </div>
+                <div class="p-2.5 bg-rose-500/10 rounded-lg text-rose-600 dark:text-rose-400"><i class="fa-solid fa-cloud-bolt text-xl"></i></div>
+            </div>
+        </div>
+
+        <!-- Middle Workspace: Filters Sidebar + Map View -->
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-4 flex-1">
+            
+            <!-- Left Filter Panel (3 cols) -->
+            <div class="lg:col-span-3 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-4 flex flex-col gap-3.5 shadow-sm overflow-y-auto max-h-[640px]">
+                <div class="flex items-center justify-between border-b border-slate-200 dark:border-slate-800 pb-2">
+                    <span class="font-bold text-sm text-slate-800 dark:text-white flex items-center gap-2">
+                        <i class="fa-solid fa-filter text-blue-600 dark:text-blue-400"></i> خيارات التصفية والتحكم
+                    </span>
+                    <button onclick="resetFilters()" class="text-[11px] text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white transition">إعادة ضبط</button>
+                </div>
+
+                <!-- ECMWF 15-Day Forecast Interactive Controller (NEW) -->
+                <div class="p-3 bg-blue-50/80 dark:bg-blue-950/40 rounded-xl border border-blue-200 dark:border-blue-900/60 space-y-2.5">
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center gap-2">
+                            <i class="fa-solid fa-cloud-showers-water text-blue-600 dark:text-blue-400"></i>
+                            <div>
+                                <span class="text-xs font-bold text-slate-900 dark:text-white block">توقعات أمطار سوريا (ECMWF)</span>
+                                <span class="text-[10px] text-slate-500 dark:text-slate-400">نموذج ECMWF-IFS حتى 15 يوماً</span>
+                            </div>
+                        </div>
+                        <label class="relative inline-flex items-center cursor-pointer">
+                            <input type="checkbox" id="toggleEcmwfForecast" checked onchange="toggleForecastLayer()" class="sr-only peer">
+                            <div class="w-8 h-4 bg-slate-300 peer-focus:outline-none rounded-full peer dark:bg-slate-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-3 after:w-3 after:transition-all peer-checked:bg-blue-600"></div>
+                        </label>
+                    </div>
+
+                    <!-- Preset Buttons: 10-Day vs 15-Day Cumulative vs Daily -->
+                    <div class="grid grid-cols-3 gap-1 pt-1">
+                        <button id="btn-mode-daily" onclick="setForecastMode('daily')" class="py-1 px-1.5 rounded text-[10px] font-bold bg-blue-600 text-white transition">
+                            يومي (Timeline)
+                        </button>
+                        <button id="btn-mode-10d" onclick="setForecastMode('10d')" class="py-1 px-1.5 rounded text-[10px] font-bold bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-blue-600 hover:text-white transition">
+                            تراكم 10 أيام
+                        </button>
+                        <button id="btn-mode-15d" onclick="setForecastMode('15d')" class="py-1 px-1.5 rounded text-[10px] font-bold bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-blue-600 hover:text-white transition">
+                            تراكم 15 يوماً
+                        </button>
+                    </div>
+
+                    <!-- Daily Timeline Slider & Play Button -->
+                    <div id="dailySliderContainer" class="space-y-1.5 pt-1 border-t border-blue-200 dark:border-blue-900/60">
+                        <div class="flex justify-between items-center text-[11px]">
+                            <span class="text-slate-600 dark:text-slate-400 font-medium">اليوم المعروض:</span>
+                            <span id="forecastDayLabel" class="font-bold text-blue-600 dark:text-blue-400 font-mono">اليوم 1 (غداً)</span>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <button id="playForecastBtn" onclick="toggleForecastAnimation()" class="p-1.5 bg-blue-600 text-white rounded-lg hover:bg-blue-500 transition text-xs shrink-0" title="تشغيل العرض التلقائي">
+                                <i class="fa-solid fa-play" id="playIcon"></i>
+                            </button>
+                            <input type="range" id="forecastDaySlider" min="0" max="14" value="0" oninput="onDaySliderChange(this.value)"
+                                   class="w-full h-1.5 bg-slate-200 dark:bg-slate-700 rounded-lg appearance-none cursor-pointer accent-blue-600">
+                        </div>
+                        <div class="flex justify-between text-[9px] text-slate-400 font-mono">
+                            <span>اليوم 1</span>
+                            <span>اليوم 7</span>
+                            <span>اليوم 15</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Buffer Zone Toggle -->
+                <div class="p-2.5 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg flex items-center justify-between">
+                    <div class="flex items-center gap-2">
+                        <i class="fa-solid fa-circle-notch text-blue-600 dark:text-blue-400 text-sm"></i>
+                        <div>
+                            <span class="text-xs font-bold text-slate-800 dark:text-slate-200 block">نطاق التأثير (Buffer Zone)</span>
+                            <span class="text-[10px] text-slate-500 dark:text-slate-400">دوائر جغرافية تتسع حسب تكرار الخطر</span>
+                        </div>
+                    </div>
+                    <label class="relative inline-flex items-center cursor-pointer">
+                        <input type="checkbox" id="toggleBufferCheckbox" checked onchange="toggleBufferZones()" class="sr-only peer">
+                        <div class="w-9 h-5 bg-slate-300 peer-focus:outline-none rounded-full peer dark:bg-slate-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-blue-600"></div>
+                    </label>
+                </div>
+
+                <!-- Search Input -->
+                <div>
+                    <label class="block text-xs text-slate-500 dark:text-slate-400 mb-1">بحث بالموقع أو الطريق أو PCode:</label>
+                    <div class="relative">
+                        <input type="text" id="searchInput" oninput="applyFilters()" placeholder="ابحث باسم الموقع أو الكود..."
+                               class="w-full bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-800 rounded-lg px-3 py-1.5 text-xs text-slate-900 dark:text-white focus:border-blue-500 focus:outline-none pl-8">
+                        <i class="fa-solid fa-magnifying-glass absolute left-2.5 top-2 text-slate-400 dark:text-slate-500 text-xs"></i>
+                    </div>
+                </div>
+
+                <!-- Filter: Governorate -->
+                <div>
+                    <label class="block text-xs text-slate-500 dark:text-slate-400 mb-1">المحافظة:</label>
+                    <select id="govFilter" onchange="applyFilters()" class="w-full bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-800 rounded-lg px-2.5 py-1.5 text-xs text-slate-900 dark:text-white focus:border-blue-500 focus:outline-none">
+                        <option value="ALL">جميع المحافظات</option>
+                    </select>
+                </div>
+
+                <!-- Filter: Storm Type -->
+                <div>
+                    <label class="block text-xs text-slate-500 dark:text-slate-400 mb-1">نوع العاصفة:</label>
+                    <select id="stormFilter" onchange="applyFilters()" class="w-full bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-800 rounded-lg px-2.5 py-1.5 text-xs text-slate-900 dark:text-white focus:border-blue-500 focus:outline-none">
+                        <option value="ALL">جميع أنواع العواصف</option>
+                    </select>
+                </div>
+
+                <!-- Filter: Risk Level -->
+                <div>
+                    <label class="block text-xs text-slate-500 dark:text-slate-400 mb-1">درجة الخطر:</label>
+                    <select id="riskFilter" onchange="applyFilters()" class="w-full bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-800 rounded-lg px-2.5 py-1.5 text-xs text-slate-900 dark:text-white focus:border-blue-500 focus:outline-none">
+                        <option value="ALL">جميع المستويات</option>
+                    </select>
+                </div>
+
+                <!-- Filter: Repetition Count -->
+                <div>
+                    <label class="block text-xs text-slate-500 dark:text-slate-400 mb-1">تكرار الخطر لنفس الموقع:</label>
+                    <select id="repeatFilter" onchange="applyFilters()" class="w-full bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-800 rounded-lg px-2.5 py-1.5 text-xs text-slate-900 dark:text-white focus:border-blue-500 focus:outline-none">
+                        <option value="ALL">جميع مرات التكرار</option>
+                    </select>
+                </div>
+
+                <!-- Legend -->
+                <div class="mt-auto bg-slate-50 dark:bg-slate-950/80 p-3 rounded-lg border border-slate-200 dark:border-slate-800/80 text-xs space-y-2">
+                    <span class="font-bold text-slate-700 dark:text-slate-300 block mb-1">مفتاح هطول الأمطار (ECMWF):</span>
+                    <div class="grid grid-cols-2 gap-1.5 text-[10px]">
+                        <div class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-full bg-sky-400 inline-block"></span> 0 - 5 مم (خفيف)</div>
+                        <div class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-full bg-blue-600 inline-block"></span> 5 - 15 مم (متوسط)</div>
+                        <div class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-full bg-purple-600 inline-block"></span> 15 - 30 مم (غزير)</div>
+                        <div class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-full bg-rose-600 inline-block"></span> > 30 مم (خطر سيول)</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Map Panel (9 cols) -->
+            <div class="lg:col-span-9 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-3 flex flex-col relative shadow-sm">
+                <div id="map"></div>
+                
+                <!-- Layer Switcher -->
+                <div class="absolute top-6 left-6 z-[1000] bg-white/90 dark:bg-slate-900/90 backdrop-blur border border-slate-300 dark:border-slate-700 px-3 py-1.5 rounded-lg text-xs flex items-center gap-2 shadow-xl">
+                    <span class="text-slate-700 dark:text-slate-300 font-semibold"><i class="fa-solid fa-layer-group ml-1"></i> نوع الخريطة:</span>
+                    <button id="btn-googleHybrid" onclick="switchBaseMap('googleHybrid')" class="text-xs px-2.5 py-1 rounded bg-blue-600 text-white font-bold transition">
+                        <i class="fa-solid fa-satellite ml-1"></i> قمر صناعي هجين (Google)
+                    </button>
+                    <button id="btn-buildings" onclick="switchBaseMap('buildings')" class="text-xs px-2.5 py-1 rounded bg-slate-200 hover:bg-slate-300 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 transition">
+                        <i class="fa-solid fa-city ml-1"></i> شوارع ومباني (Esri)
+                    </button>
+                    <button id="btn-hot" onclick="switchBaseMap('hot')" class="text-xs px-2.5 py-1 rounded bg-slate-200 hover:bg-slate-300 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 transition">
+                        <i class="fa-solid fa-building ml-1"></i> مباني إنسانية (HOT)
+                    </button>
+                </div>
+            </div>
+
+        </div>
+
+        <!-- Bottom Incident Table -->
+        <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl overflow-hidden flex flex-col shadow-sm">
+            <div class="px-4 py-3 border-b border-slate-200 dark:border-slate-800 flex justify-between items-center bg-slate-50 dark:bg-slate-900/90">
+                <div class="flex items-center gap-2">
+                    <i class="fa-solid fa-table-list text-amber-500 dark:text-amber-400"></i>
+                    <h2 class="text-sm font-bold text-slate-900 dark:text-white">سجل البلاغات والتدخلات الميدانية (بيانات ملف الإكسل)</h2>
+                </div>
+                <span id="recordCountBadge" class="text-xs px-2.5 py-1 rounded bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-mono">0 سجلات معروضة</span>
+            </div>
+
+            <div class="overflow-x-auto max-h-80" id="tableContainer">
+                <table class="w-full text-right text-xs text-slate-700 dark:text-slate-300">
+                    <thead class="bg-slate-100 dark:bg-slate-950 text-slate-600 dark:text-slate-400 font-bold sticky top-0 border-b border-slate-200 dark:border-slate-800">
+                        <tr>
+                            <th class="p-2.5">رقم</th>
+                            <th class="p-2.5">التاريخ</th>
+                            <th class="p-2.5">المحافظة</th>
+                            <th class="p-2.5">المنطقة</th>
+                            <th class="p-2.5">القرية / البلدة</th>
+                            <th class="p-2.5">P-Code</th>
+                            <th class="p-2.5">تكرار الخطر</th>
+                            <th class="p-2.5">نوع العاصفة</th>
+                            <th class="p-2.5">نوع الخطر</th>
+                            <th class="p-2.5">المكان المستهدف</th>
+                            <th class="p-2.5">درجة الخطر</th>
+                            <th class="p-2.5">الأضرار الناتجة</th>
+                            <th class="p-2.5">الأعمال المنفذة</th>
+                            <th class="p-2.5">الإحداثيات (Lat, Lon)</th>
+                            <th class="p-2.5 text-center">تركيز</th>
+                        </tr>
+                    </thead>
+                    <tbody id="incidentsTableBody" class="divide-y divide-slate-200 dark:divide-slate-800">
+                        <tr>
+                            <td colspan="15" class="p-10 text-center text-slate-500 dark:text-slate-400">
+                                <div class="max-w-md mx-auto space-y-2">
+                                    <i class="fa-solid fa-file-excel text-4xl text-emerald-600 dark:text-emerald-500 block mb-3 animate-bounce"></i>
+                                    <p class="font-bold text-sm text-slate-800 dark:text-white">بانتظار قراءة ملف الإكسل (سجل العواصف.xlsx)</p>
+                                    <p class="text-xs">ضع الملف بجانب صفحة الموقع أو قم بسحبه وإفلاته داخل هذه النافذة للبدء الفوري.</p>
+                                </div>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- Main Logic Script -->
+    <script src="main.js"></script>
+</body>
+</html>
